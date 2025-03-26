@@ -17,12 +17,13 @@ loginForm.addEventListener('submit', async (e) => {
 
         const data = await response.json();
 
-        if (response.ok) {
-            localStorage.setItem('jwt', data.jwt);
-            window.location.href = 'profile.html';
-        } else {
-            alert('Login failed: ' + data.message);
-        }
+    if (response.ok) {
+        console.log('Raw JWT:', data.jwt);  // Log the raw JWT
+        localStorage.setItem('jwt', data.jwt);
+        window.location.href = 'profile.html';
+    } else {
+        alert('Login failed: ' + data.message);
+    }
     } catch (error) {
         alert('Login failed: ' + error);
     }

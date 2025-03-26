@@ -6,63 +6,40 @@ logoutButton.addEventListener('click', () => {
 });
 
 let transactionData = [];
-let auditData = [];
+let resultData = [];
+let userData = {};
 
 async function fetchProfileData() {
     const jwt = localStorage.getItem('jwt');
-    if (!jwt) {
+    
+    // Validate JWT before using
+    if (!jwt || jwt.split('.').length !== 3) {
+        console.error('Invalid JWT:', jwt);
+        alert('Invalid authentication token');
         window.location.href = 'index.html';
         return;
     }
 
     const query = `
         query {
-            transaction(
-              where: {
-                type: {_eq: "xp"}
-              }
-              order_by: {createdAt: asc}
-            ) {
-              amount
-              createdAt
-              path
+            transaction(where: {type: {_eq: "xp"}}) {
+                amount
+                createdAt
+                path
+                objectId
             }
-
-            result(
-              where: {
-                type: {_eq: "up"}
-              }
-            ) {
-              grade
-              createdAt
-              path
+            
+            result(where: {type: {_eq: "project"}}) {
+                grade
+                createdAt
+                path
+                objectId
             }
-
+            
             user {
-              id
-              login
-            }
-
-            # For audits done by the user (as auditor)
-            result(
-              where: {
-                type: {_eq: "up"}
-              }
-            ) {
-              grade      # 1 for pass, 0 for fail
-              createdAt
-              path
-            }
-
-            # For audits received by the user (as auditee)
-            result(
-              where: {
-                type: {_eq: "down"}
-              }
-            ) {
-              grade
-              createdAt
-              path
+                id
+                login
+                attrs
             }
         }
     `;
@@ -77,26 +54,42 @@ async function fetchProfileData() {
             body: JSON.stringify({ query })
         });
 
-        const data = await response.json();
+        const responseData = await response.json();
 
-        if (response.ok) {
-            transactionData = data.data.transaction;
-            auditData = data.data.result;
+        // Log the full response for debugging
+        console.log('Full Response:', responseData);
 
-            const user = data.data.user[0];
-            document.getElementById('user-id').textContent = user.id;
-            document.getElementById('username').textContent = user.login;
-        } else {
-            alert('Failed to fetch profile data.');
+        // Check for errors in the GraphQL response
+        if (responseData.errors) {
+            throw new Error(responseData.errors.map(err => err.message).join(', '));
         }
-    } catch (error) {
-        alert('Failed to fetch profile data: ' + error);
-    }
 
-    generateGraphs();
+        // Ensure data exists before accessing
+        if (!responseData.data) {
+            throw new Error('No data returned from GraphQL query');
+        }
+
+        // Safe access with fallback to empty arrays/objects
+        transactionData = responseData.data?.transaction || [];
+        resultData = responseData.data?.result || [];
+        userData = (responseData.data?.user && responseData.data.user[0]) || {};
+
+        // Update UI with user data
+        document.getElementById('user-id').textContent = userData.id || 'N/A';
+        document.getElementById('username').textContent = userData.login || 'N/A';
+
+        // Calculate total XP
+        const totalXP = transactionData.reduce((sum, transaction) => sum + transaction.amount, 0);
+        document.getElementById('xp').textContent = `${totalXP} XP`;
+
+        generateGraphs();
+    } catch (error) {
+        console.error('Full Error:', error);
+        alert('Failed to fetch profile data: ' + error.message);
+    }
 }
 
-async function generateGraphs() {
+function generateGraphs() {
     // XP Over Time Line Chart
     const xpSvg = document.getElementById('xp-over-time');
     const xpWidth = xpSvg.width.baseVal.value;
@@ -105,15 +98,23 @@ async function generateGraphs() {
     // Clear previous content
     xpSvg.innerHTML = '';
 
-    // Process XP data
-    const xpValues = transactionData.map(item => item.amount);
-    const xpMax = Math.max(...xpValues);
+    // Process XP data - sort by createdAt
+    const sortedTransactions = transactionData.sort((a, b) => 
+        new Date(a.createdAt) - new Date(b.createdAt)
+    );
+
+    // Calculate cumulative XP
+    const cumulativeXP = sortedTransactions.reduce((acc, transaction) => {
+        const lastXP = acc.length > 0 ? acc[acc.length - 1] : 0;
+        acc.push(lastXP + transaction.amount);
+        return acc;
+    }, []);
 
     // Create line
     let xpLinePath = '';
-    for (let i = 0; i < transactionData.length; i++) {
-        const x = i / (transactionData.length - 1) * xpWidth;
-        const y = xpHeight - (transactionData[i].amount / xpMax) * xpHeight;
+    for (let i = 0; i < cumulativeXP.length; i++) {
+        const x = i / (cumulativeXP.length - 1) * xpWidth;
+        const y = xpHeight - (cumulativeXP[i] / Math.max(...cumulativeXP)) * xpHeight;
         xpLinePath += (i === 0) ? `M${x},${y}` : ` L${x},${y}`;
     }
 
@@ -123,18 +124,18 @@ async function generateGraphs() {
     xpLine.setAttribute('fill', 'none');
     xpSvg.appendChild(xpLine);
 
-    // Audit Ratios Bar Chart
-    const auditSvg = document.getElementById('audit-ratios');
-    const auditWidth = auditSvg.width.baseVal.value;
-    const auditHeight = auditSvg.height.baseVal.value;
+    // Project Success Ratio Bar Chart
+    const projectSvg = document.getElementById('audit-ratios');
+    const projectWidth = projectSvg.width.baseVal.value;
+    const projectHeight = projectSvg.height.baseVal.value;
 
     // Clear previous content
-    auditSvg.innerHTML = '';
+    projectSvg.innerHTML = '';
 
-    // Process audit data
-    const passCount = auditData.filter(item => item.grade === 1).length;
-    const failCount = auditData.length - passCount;
-    const totalCount = auditData.length;
+    // Process project data
+    const passCount = resultData.filter(item => item.grade === 1).length;
+    const failCount = resultData.filter(item => item.grade === 0).length;
+    const totalCount = resultData.length;
 
     const passPercentage = (totalCount === 0) ? 0 : passCount / totalCount * 100;
     const failPercentage = (totalCount === 0) ? 0 : failCount / totalCount * 100;
@@ -143,17 +144,19 @@ async function generateGraphs() {
     const passBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     passBar.setAttribute('x', 0);
     passBar.setAttribute('y', 0);
-    passBar.setAttribute('width', auditWidth / 2);
-    passBar.setAttribute('height', passPercentage / 100 * auditHeight);
+    passBar.setAttribute('width', projectWidth / 2);
+    passBar.setAttribute('height', passPercentage / 100 * projectHeight);
     passBar.setAttribute('fill', 'green');
-    auditSvg.appendChild(passBar);
+    projectSvg.appendChild(passBar);
 
     // Create fail bar
     const failBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    failBar.setAttribute('x', auditWidth / 2);
+    failBar.setAttribute('x', projectWidth / 2);
     failBar.setAttribute('y', 0);
-    failBar.setAttribute('width', auditWidth / 2);
-    failBar.setAttribute('height', failPercentage / 100 * auditHeight);
+    failBar.setAttribute('width', projectWidth / 2);
+    failBar.setAttribute('height', failPercentage / 100 * projectHeight);
     failBar.setAttribute('fill', 'red');
-    auditSvg.appendChild(failBar);
+    projectSvg.appendChild(failBar);
 }
+
+fetchProfileData();
