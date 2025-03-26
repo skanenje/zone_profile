@@ -13,11 +13,53 @@ async function fetchProfileData() {
     }
 
     const query = `
-        {
+        query {
+            transaction(
+              where: {
+                type: {_eq: "xp"}
+              }
+              order_by: {createdAt: asc}
+            ) {
+              amount
+              createdAt
+              path
+            }
+            
+            result(
+              where: {
+                type: {_eq: "up"}
+              }
+            ) {
+              grade
+              createdAt
+              path
+            }
+            
             user {
-                id
-                login
-                xp
+              id
+              login
+            }
+
+            # For audits done by the user (as auditor)
+            result(
+              where: {
+                type: {_eq: "up"}
+              }
+            ) {
+              grade      # 1 for pass, 0 for fail
+              createdAt
+              path
+            }
+
+            # For audits received by the user (as auditee)
+            result(
+              where: {
+                type: {_eq: "down"}
+              }
+            ) {
+              grade
+              createdAt
+              path
             }
         }
     `;
