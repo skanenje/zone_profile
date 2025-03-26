@@ -19,7 +19,12 @@ loginForm.addEventListener('submit', async (e) => {
 
     if (response.ok) {
         console.log('Raw JWT:', data.jwt);  // Log the raw JWT
-        localStorage.setItem('jwt', data.jwt);
+        if (data.jwt) {
+            localStorage.setItem('hasura_jwt_token', data.jwt);
+        } else {
+            console.error('JWT is missing in the response');
+            alert('Login successful, but JWT is missing!');
+        }
         window.location.href = 'profile.html';
     } else {
         alert('Login failed: ' + data.message);

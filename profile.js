@@ -10,7 +10,7 @@ let resultData = [];
 let userData = {};
 
 async function fetchProfileData() {
-    const jwt = localStorage.getItem('jwt');
+    const jwt = localStorage.getItem('hasura_jwt_token');
     
     // Validate JWT before using
     if (!jwt || jwt.split('.').length !== 3) {
