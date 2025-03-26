@@ -6,19 +6,40 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Profile</h1>
-    <div id="profile-data">
-        <p>Welcome!</p>
-        <p>User ID: <span id="user-id"></span></p>
-        <p>Username: <span id="username"></span></p>
-        <p>XP: <span id="xp"></span></p>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1>Profile</h1>
+            <button id="logout-button">Logout</button>
+        </header>
+
+        <main class="dashboard-content">
+            <section class="key-metrics">
+                <div class="metric-card">
+                    <h3>User ID</h3>
+                    <p id="user-id"></p>
+                </div>
+                <div class="metric-card">
+                    <h3>Username</h3>
+                    <p id="username"></p>
+                </div>
+                <div class="metric-card">
+                    <h3>XP</h3>
+                    <p id="xp"></p>
+                </div>
+            </section>
+
+            <section class="charts">
+                <div class="chart-container">
+                    <h3>XP Over Time</h3>
+                    <svg id="xp-over-time" width="400" height="200"></svg>
+                </div>
+                <div class="chart-container">
+                    <h3>Audit Ratios</h3>
+                    <svg id="audit-ratios" width="400" height="200"></svg>
+                </div>
+            </section>
+        </main>
     </div>
-    <button id="logout-button">Logout</button>
     <script src="profile.js"></script>
-    <h2>Statistics</h2>
-    <div id="statistics">
-        <svg id="xp-over-time" width="400" height="200"></svg>
-        <svg id="audit-ratios" width="400" height="200"></svg>
-    </div>
 </body>
 </html>
