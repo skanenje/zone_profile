@@ -112,3 +112,21 @@ button:hover {
     margin-bottom: 10px;
     color: var(--accent-color);
 }
+
+/* Authentication Styles */
+#auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.form-wrapper {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 30px rgba(65, 88, 208, 0.2);
+    width: 100%;
+    max-width: 500px;
+    padding: 30px;
+}
