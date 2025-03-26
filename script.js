@@ -19,8 +19,7 @@ loginForm.addEventListener('submit', async (e) => {
 
         if (response.ok) {
             localStorage.setItem('jwt', data.jwt);
-            alert('Login successful!');
-            // Redirect to profile page
+            window.location.href = 'profile.html';
         } else {
             alert('Login failed: ' + data.message);
         }
