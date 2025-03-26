@@ -61,12 +61,16 @@ async function fetchProfileData() {
 
         // Check for errors in the GraphQL response
         if (responseData.errors) {
+            console.error('GraphQL Errors:', responseData.errors);
             throw new Error(responseData.errors.map(err => err.message).join(', '));
         }
 
         // Ensure data exists before accessing
         if (!responseData.data) {
+            console.error('No data returned from GraphQL query');
             throw new Error('No data returned from GraphQL query');
+        } else {
+            console.log('GraphQL Data:', responseData.data);
         }
 
         // Safe access with fallback to empty arrays/objects
