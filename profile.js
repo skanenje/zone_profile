@@ -5,6 +5,9 @@ logoutButton.addEventListener('click', () => {
     window.location.href = 'index.html';
 });
 
+let transactionData = [];
+let auditData = [];
+
 async function fetchProfileData() {
     const jwt = localStorage.getItem('jwt');
     if (!jwt) {
@@ -24,7 +27,7 @@ async function fetchProfileData() {
               createdAt
               path
             }
-            
+
             result(
               where: {
                 type: {_eq: "up"}
@@ -34,7 +37,7 @@ async function fetchProfileData() {
               createdAt
               path
             }
-            
+
             user {
               id
               login
@@ -76,44 +79,48 @@ async function fetchProfileData() {
 
         const data = await response.json();
 
-        if (response.ok && data.data && data.data.user && data.data.user.length > 0) {
+        if (response.ok) {
+            transactionData = data.data.transaction;
+            auditData = data.data.result;
+
             const user = data.data.user[0];
             document.getElementById('user-id').textContent = user.id;
             document.getElementById('username').textContent = user.login;
-            document.getElementById('xp').textContent = user.xp;
         } else {
             alert('Failed to fetch profile data.');
         }
     } catch (error) {
         alert('Failed to fetch profile data: ' + error);
     }
+
+    generateGraphs();
 }
 
-fetchProfileData();
-
 async function generateGraphs() {
-    // Placeholder data
-    const xpData = [
-        { month: 'Jan', xp: 100 },
-        { month: 'Feb', xp: 150 },
-        { month: 'Mar', xp: 200 },
-        { month: 'Apr', xp: 180 },
-        { month: 'May', xp: 250 }
-    ];
-
-    const auditData = [
-        { result: 'Pass', count: 80 },
-        { result: 'Fail', count: 20 }
-    ];
-
     // XP Over Time Line Chart
     const xpSvg = document.getElementById('xp-over-time');
     const xpWidth = xpSvg.width.baseVal.value;
     const xpHeight = xpSvg.height.baseVal.value;
 
+    // Clear previous content
+    xpSvg.innerHTML = '';
+
+    // Process XP data
+    const xpValues = transactionData.map(item => item.amount);
+    const xpMax = Math.max(...xpValues);
+
+    // Create line
+    let xpLinePath = '';
+    for (let i = 0; i < transactionData.length; i++) {
+        const x = i / (transactionData.length - 1) * xpWidth;
+        const y = xpHeight - (transactionData[i].amount / xpMax) * xpHeight;
+        xpLinePath += (i === 0) ? `M${x},${y}` : ` L${x},${y}`;
+    }
+
     const xpLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    xpLine.setAttribute('d', 'M0,' + xpHeight + ' L' + xpWidth + ',0');
+    xpLine.setAttribute('d', xpLinePath);
     xpLine.setAttribute('stroke', 'blue');
+    xpLine.setAttribute('fill', 'none');
     xpSvg.appendChild(xpLine);
 
     // Audit Ratios Bar Chart
@@ -121,21 +128,32 @@ async function generateGraphs() {
     const auditWidth = auditSvg.width.baseVal.value;
     const auditHeight = auditSvg.height.baseVal.value;
 
+    // Clear previous content
+    auditSvg.innerHTML = '';
+
+    // Process audit data
+    const passCount = auditData.filter(item => item.grade === 1).length;
+    const failCount = auditData.length - passCount;
+    const totalCount = auditData.length;
+
+    const passPercentage = (totalCount === 0) ? 0 : passCount / totalCount * 100;
+    const failPercentage = (totalCount === 0) ? 0 : failCount / totalCount * 100;
+
+    // Create pass bar
     const passBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     passBar.setAttribute('x', 0);
     passBar.setAttribute('y', 0);
     passBar.setAttribute('width', auditWidth / 2);
-    passBar.setAttribute('height', auditData[0].count / 100 * auditHeight);
+    passBar.setAttribute('height', passPercentage / 100 * auditHeight);
     passBar.setAttribute('fill', 'green');
     auditSvg.appendChild(passBar);
 
+    // Create fail bar
     const failBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     failBar.setAttribute('x', auditWidth / 2);
     failBar.setAttribute('y', 0);
     failBar.setAttribute('width', auditWidth / 2);
-    failBar.setAttribute('height', auditData[1].count / 100 * auditHeight);
+    failBar.setAttribute('height', failPercentage / 100 * auditHeight);
     failBar.setAttribute('fill', 'red');
     auditSvg.appendChild(failBar);
 }
-
-generateGraphs();
