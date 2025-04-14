@@ -141,10 +141,10 @@ function generateGraphs() {
     const xpWidth = xpSvg.clientWidth;
     const xpHeight = xpSvg.clientHeight;
     const padding = {
-        left: 60,    // Increased left padding for y-axis labels
+        left: 60,    
         right: 20,
         top: 20,
-        bottom: 30   // Increased bottom padding for x-axis labels
+        bottom: 30  
     };
     
     // Clear previous content
