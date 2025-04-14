@@ -141,6 +141,7 @@ function generateGraphs() {
     const xpSvg = document.getElementById('xp-over-time');
     const xpWidth = xpSvg.clientWidth;
     const xpHeight = xpSvg.clientHeight;
+    const padding = 40;
     
     // Clear previous content
     xpSvg.innerHTML = '';
@@ -148,10 +149,10 @@ function generateGraphs() {
     // Add grid lines
     const gridLines = 5;
     for (let i = 0; i <= gridLines; i++) {
-        const y = (i / gridLines) * xpHeight;
+        const y = padding + (i / gridLines) * (xpHeight - padding * 2);
         const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', '0');
-        gridLine.setAttribute('x2', xpWidth);
+        gridLine.setAttribute('x1', padding);
+        gridLine.setAttribute('x2', xpWidth - padding);
         gridLine.setAttribute('y1', y);
         gridLine.setAttribute('y2', y);
         gridLine.setAttribute('class', 'chart-grid-line');
@@ -178,18 +179,85 @@ function generateGraphs() {
         const minDate = dataPoints[0].date;
         const maxDate = dataPoints[dataPoints.length - 1].date;
         
+        // Draw the line
         let path = 'M ';
+        const points = [];
         dataPoints.forEach((point, i) => {
-            const x = ((point.date - minDate) / (maxDate - minDate)) * xpWidth;
-            const y = xpHeight - (point.xp / maxXP) * xpHeight;
+            const x = padding + ((point.date - minDate) / (maxDate - minDate)) * (xpWidth - padding * 2);
+            const y = padding + (xpHeight - padding * 2) - ((point.xp / maxXP) * (xpHeight - padding * 2));
             path += `${x},${y} `;
             if (i < dataPoints.length - 1) path += 'L ';
+            points.push({ x, y });
         });
 
+        // Create gradient
+        const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+        gradient.setAttribute('id', 'xpLineGradient');
+        gradient.setAttribute('gradientUnits', 'userSpaceOnUse');
+        gradient.setAttribute('x1', '0');
+        gradient.setAttribute('y1', '0');
+        gradient.setAttribute('x2', xpWidth.toString());
+        gradient.setAttribute('y2', '0');
+
+        const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop1.setAttribute('offset', '0%');
+        stop1.setAttribute('stop-color', 'var(--primary-color)');
+
+        const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+        stop2.setAttribute('offset', '100%');
+        stop2.setAttribute('stop-color', 'var(--secondary-color)');
+
+        gradient.appendChild(stop1);
+        gradient.appendChild(stop2);
+        xpSvg.appendChild(gradient);
+
+        // Add the line
         const xpLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         xpLine.setAttribute('d', path);
         xpLine.setAttribute('class', 'chart-line');
+        xpLine.setAttribute('stroke', 'url(#xpLineGradient)');
         xpSvg.appendChild(xpLine);
+
+        // Add data points
+        points.forEach((point) => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x.toString());
+            circle.setAttribute('cy', point.y.toString());
+            circle.setAttribute('r', '4');
+            circle.setAttribute('class', 'chart-point');
+            xpSvg.appendChild(circle);
+        });
+
+        // Add Y-axis labels
+        for (let i = 0; i <= gridLines; i++) {
+            const y = padding + (i / gridLines) * (xpHeight - padding * 2);
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            const value = ((gridLines - i) / gridLines * maxXP / 1000).toFixed(1);
+            label.setAttribute('x', padding - 10);
+            label.setAttribute('y', y);
+            label.setAttribute('text-anchor', 'end');
+            label.setAttribute('alignment-baseline', 'middle');
+            label.setAttribute('class', 'chart-label');
+            label.textContent = `${value}k`;
+            xpSvg.appendChild(label);
+        }
+
+        // Add X-axis labels (start and end dates)
+        const startLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        startLabel.setAttribute('x', padding);
+        startLabel.setAttribute('y', xpHeight - 10);
+        startLabel.setAttribute('class', 'chart-label');
+        startLabel.textContent = minDate.toLocaleDateString();
+
+        const endLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        endLabel.setAttribute('x', xpWidth - padding);
+        endLabel.setAttribute('y', xpHeight - 10);
+        endLabel.setAttribute('text-anchor', 'end');
+        endLabel.setAttribute('class', 'chart-label');
+        endLabel.textContent = maxDate.toLocaleDateString();
+
+        xpSvg.appendChild(startLabel);
+        xpSvg.appendChild(endLabel);
     }
 }
 
