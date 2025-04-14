@@ -6,7 +6,11 @@ logoutButton.addEventListener('click', () => {
 });
 
 let moduleXP = [];
-let piscineXP = [];
+let piscineGoXP = [];
+let piscineJsXP = [];
+let piscineUxXP = [];
+let piscineUiXP = [];
+let piscineRustXP = [];
 
 async function fetchProfileData() {
     const jwt = localStorage.getItem('hasura_jwt_token');
@@ -23,7 +27,10 @@ async function fetchProfileData() {
             moduleXP: transaction(
                 where: {
                     type: {_eq: "xp"}, 
-                    path: {_like: "/kisumu/module/%"}
+                    path: {_like: "/kisumu/module/%"},
+                    _and: {
+                        path: {_nlike: "%piscine%"}
+                    }
                 }
             ) {
                 amount
@@ -31,10 +38,54 @@ async function fetchProfileData() {
                 path
             }
             
-            piscineXP: transaction(
+            piscineGoXP: transaction(
                 where: {
                     type: {_eq: "xp"}, 
-                    path: {_like: "/kisumu/piscine-%"}
+                    path: {_like: "%piscine-go%"}
+                }
+            ) {
+                amount
+                createdAt
+                path
+            }
+
+            piscineJsXP: transaction(
+                where: {
+                    type: {_eq: "xp"}, 
+                    path: {_like: "%piscine-js%"}
+                }
+            ) {
+                amount
+                createdAt
+                path
+            }
+
+            piscineUxXP: transaction(
+                where: {
+                    type: {_eq: "xp"}, 
+                    path: {_like: "%piscine-ux%"}
+                }
+            ) {
+                amount
+                createdAt
+                path
+            }
+
+            piscineUiXP: transaction(
+                where: {
+                    type: {_eq: "xp"}, 
+                    path: {_like: "%piscine-ui%"}
+                }
+            ) {
+                amount
+                createdAt
+                path
+            }
+
+            piscineRustXP: transaction(
+                where: {
+                    type: {_eq: "xp"}, 
+                    path: {_like: "%piscine-rust%"}
                 }
             ) {
                 amount
@@ -95,7 +146,11 @@ async function fetchProfileData() {
 
         // Initialize the XP arrays from the response
         moduleXP = responseData.data.moduleXP || [];
-        piscineXP = responseData.data.piscineXP || [];
+        piscineGoXP = responseData.data.piscineGoXP || [];
+        piscineJsXP = responseData.data.piscineJsXP || [];
+        piscineUxXP = responseData.data.piscineUxXP || [];
+        piscineUiXP = responseData.data.piscineUiXP || [];
+        piscineRustXP = responseData.data.piscineRustXP || [];
 
         // Update UI with user data
         document.getElementById('user-id').textContent = responseData.data.user[0].id || 'N/A';
@@ -103,13 +158,21 @@ async function fetchProfileData() {
 
         // Calculate different types of XP
         const moduleXPTotal = moduleXP.reduce((sum, t) => sum + t.amount, 0) || 0;
-        const piscineXPTotal = piscineXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const piscineGoTotal = piscineGoXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const piscineJsTotal = piscineJsXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const piscineUxTotal = piscineUxXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const piscineUiTotal = piscineUiXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const piscineRustTotal = piscineRustXP.reduce((sum, t) => sum + t.amount, 0) || 0;
         
         // Update UI with separated XP values
         document.getElementById('xp').innerHTML = `
             <div>Module XP: ${(moduleXPTotal / 1000).toFixed(2)} kB</div>
-            <div>Piscine XP: ${(piscineXPTotal / 1000).toFixed(2)} kB</div>
-            <div>Total XP: ${((moduleXPTotal + piscineXPTotal) / 1000).toFixed(2)} kB</div>
+            <div>Piscine Go XP: ${(piscineGoTotal / 1000).toFixed(2)} kB</div>
+            <div>Piscine JS XP: ${(piscineJsTotal / 1000).toFixed(2)} kB</div>
+            <div>Piscine UX XP: ${(piscineUxTotal / 1000).toFixed(2)} kB</div>
+            <div>Piscine UI XP: ${(piscineUiTotal / 1000).toFixed(2)} kB</div>
+            <div>Piscine Rust XP: ${(piscineRustTotal / 1000).toFixed(2)} kB</div>
+            <div>Total XP: ${((moduleXPTotal + piscineGoTotal + piscineJsTotal + piscineUxTotal + piscineUiTotal + piscineRustTotal) / 1000).toFixed(2)} kB</div>
         `;
 
         // Calculate audit statistics
@@ -164,7 +227,7 @@ function generateGraphs() {
     }
 
     // Process XP data
-    const sortedXP = [...moduleXP, ...piscineXP].sort((a, b) => 
+    const sortedXP = [...moduleXP, ...piscineGoXP, ...piscineJsXP, ...piscineUxXP, ...piscineUiXP, ...piscineRustXP].sort((a, b) => 
         new Date(a.createdAt) - new Date(b.createdAt)
     );
 
