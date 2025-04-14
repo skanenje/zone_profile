@@ -10,7 +10,8 @@
     />
   </head>
   <body style="margin: 0;">
-    <div id="graphiql" style="height: 100vh;"></div>
+    <div id="token-status" style="padding: 10px; background: #f0f0f0;"></div>
+    <div id="graphiql" style="height: calc(100vh - 40px);"></div>
     <script 
       src="https://cdn.jsdelivr.net/npm/react@17.0.2/umd/react.production.min.js"
       integrity="sha256-Ipu/TQ50iCCVZBUsZyNJfxrDk0E2yhaEIz0vqI+kFG8="
@@ -24,30 +25,65 @@
       integrity="sha256-n/LKaELupC1H/PU6joz+ybeRJHT2xCdekEt6OYMOOZU="
       crossorigin="anonymous"></script>
     <script>
-      // Define the fetcher function for your GraphQL endpoint
+      // Check token status
+      function updateTokenStatus() {
+        const token = localStorage.getItem('hasura_jwt_token');
+        const statusDiv = document.getElementById('token-status');
+        
+        if (!token) {
+          statusDiv.style.backgroundColor = '#ffebee';
+          statusDiv.innerHTML = 'Error: No JWT token found. Please log in first.';
+          return false;
+        }
+        
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          statusDiv.style.backgroundColor = '#ffebee';
+          statusDiv.innerHTML = 'Error: Invalid JWT token format. Please log in again.';
+          return false;
+        }
+        
+        statusDiv.style.backgroundColor = '#e8f5e9';
+        statusDiv.innerHTML = 'Token found and valid format detected. You can now make queries.';
+        return true;
+      }
+
+      // Define the fetcher function
       function fetchGraphQL(params) {
+        const token = localStorage.getItem('hasura_jwt_token');
+        
+        if (!updateTokenStatus()) {
+          return Promise.reject(new Error('Invalid token state'));
+        }
+        
         return fetch(
           "https://learn.zone01kisumu.ke/api/graphql-engine/v1/graphql",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(params),
           }
         ).then((response) => response.json());
       }
 
-      // Render GraphiQL
-      ReactDOM.render(
-        React.createElement(GraphiQL, {
-          fetcher: fetchGraphQL,
-          defaultQuery: `query {
-            # Write your query here
-          }`,
-        }),
-        document.getElementById("graphiql")
-      );
+      // Only render if we have a token
+      if (updateTokenStatus()) {
+        ReactDOM.render(
+          React.createElement(GraphiQL, {
+            fetcher: fetchGraphQL,
+            defaultQuery: `query {
+              user {
+                id
+                login
+              }
+            }`
+          }),
+          document.getElementById("graphiql")
+        );
+      }
     </script>
   </body>
 </html>

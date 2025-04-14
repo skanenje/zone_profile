@@ -5,14 +5,12 @@ logoutButton.addEventListener('click', () => {
     window.location.href = 'index.html';
 });
 
-let transactionData = [];
-let resultData = [];
-let userData = {};
+let moduleXP = [];
+let piscineXP = [];
 
 async function fetchProfileData() {
     const jwt = localStorage.getItem('hasura_jwt_token');
     
-    // Validate JWT before using
     if (!jwt || jwt.split('.').length !== 3) {
         console.error('Invalid JWT:', jwt);
         alert('Invalid authentication token');
@@ -22,18 +20,48 @@ async function fetchProfileData() {
 
     const query = `
         query {
-            transaction(where: {type: {_eq: "xp"}}) {
+            moduleXP: transaction(
+                where: {
+                    type: {_eq: "xp"}, 
+                    path: {_like: "/kisumu/module/%"}
+                }
+            ) {
                 amount
                 createdAt
                 path
-                objectId
             }
             
-            result(where: {type: {_eq: "project"}}) {
-                grade
+            piscineXP: transaction(
+                where: {
+                    type: {_eq: "xp"}, 
+                    path: {_like: "/kisumu/piscine-%"}
+                }
+            ) {
+                amount
                 createdAt
                 path
-                objectId
+            }
+            
+            auditsDone: transaction(
+                where: {
+                    type: {_eq: "up"},
+                    path: {_like: "/kisumu/module/%"}
+                }
+            ) {
+                amount
+                createdAt
+                path
+            }
+            
+            auditsReceived: transaction(
+                where: {
+                    type: {_eq: "down"},
+                    path: {_like: "/kisumu/module/%"}
+                }
+            ) {
+                amount
+                createdAt
+                path
             }
             
             user {
@@ -56,36 +84,51 @@ async function fetchProfileData() {
 
         const responseData = await response.json();
 
-        // Log the full response for debugging
-        console.log('Full Response:', responseData);
-
-        // Check for errors in the GraphQL response
         if (responseData.errors) {
             console.error('GraphQL Errors:', responseData.errors);
             throw new Error(responseData.errors.map(err => err.message).join(', '));
         }
 
-        // Ensure data exists before accessing
         if (!responseData.data) {
-            console.error('No data returned from GraphQL query');
             throw new Error('No data returned from GraphQL query');
-        } else {
-            console.log('GraphQL Data:', responseData.data);
         }
 
-        // Safe access with fallback to empty arrays/objects
-        transactionData = responseData.data?.transaction || [];
-        resultData = responseData.data?.result || [];
-        userData = (responseData.data?.user && responseData.data.user[0]) || {};
+        // Initialize the XP arrays from the response
+        moduleXP = responseData.data.moduleXP || [];
+        piscineXP = responseData.data.piscineXP || [];
 
         // Update UI with user data
-        document.getElementById('user-id').textContent = userData.id || 'N/A';
-        document.getElementById('username').textContent = userData.login || 'N/A';
+        document.getElementById('user-id').textContent = responseData.data.user[0].id || 'N/A';
+        document.getElementById('username').textContent = responseData.data.user[0].login || 'N/A';
 
-        // Calculate total XP
-        const totalXP = transactionData.reduce((sum, transaction) => sum + transaction.amount, 0);
-        document.getElementById('xp').textContent = `${totalXP} XP`;
+        // Calculate different types of XP
+        const moduleXPTotal = moduleXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        const piscineXPTotal = piscineXP.reduce((sum, t) => sum + t.amount, 0) || 0;
+        
+        // Update UI with separated XP values
+        document.getElementById('xp').innerHTML = `
+            <div>Module XP: ${(moduleXPTotal / 1000).toFixed(2)} kB</div>
+            <div>Piscine XP: ${(piscineXPTotal / 1000).toFixed(2)} kB</div>
+            <div>Total XP: ${((moduleXPTotal + piscineXPTotal) / 1000).toFixed(2)} kB</div>
+        `;
 
+        // Calculate audit statistics
+        const auditsDone = responseData.data.auditsDone || [];
+        const auditsReceived = responseData.data.auditsReceived || [];
+        
+        // Update the audit ratios visualization
+        updateAuditRatios({
+            done: {
+                count: auditsDone.length,
+                amount: auditsDone.reduce((sum, audit) => sum + audit.amount, 0)
+            },
+            received: {
+                count: auditsReceived.length,
+                amount: auditsReceived.reduce((sum, audit) => sum + audit.amount, 0)
+            }
+        });
+
+        // Generate graphs after data is loaded
         generateGraphs();
     } catch (error) {
         console.error('Full Error:', error);
@@ -96,71 +139,112 @@ async function fetchProfileData() {
 function generateGraphs() {
     // XP Over Time Line Chart
     const xpSvg = document.getElementById('xp-over-time');
-    const xpWidth = xpSvg.width.baseVal.value;
-    const xpHeight = xpSvg.height.baseVal.value;
-
+    const xpWidth = xpSvg.clientWidth;
+    const xpHeight = xpSvg.clientHeight;
+    
     // Clear previous content
     xpSvg.innerHTML = '';
+    
+    // Add grid lines
+    const gridLines = 5;
+    for (let i = 0; i <= gridLines; i++) {
+        const y = (i / gridLines) * xpHeight;
+        const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        gridLine.setAttribute('x1', '0');
+        gridLine.setAttribute('x2', xpWidth);
+        gridLine.setAttribute('y1', y);
+        gridLine.setAttribute('y2', y);
+        gridLine.setAttribute('class', 'chart-grid-line');
+        xpSvg.appendChild(gridLine);
+    }
 
-    // Process XP data - sort by createdAt
-    const sortedTransactions = transactionData.sort((a, b) => 
+    // Process XP data
+    const sortedXP = [...moduleXP, ...piscineXP].sort((a, b) => 
         new Date(a.createdAt) - new Date(b.createdAt)
     );
 
-    // Calculate cumulative XP
-    const cumulativeXP = sortedTransactions.reduce((acc, transaction) => {
-        const lastXP = acc.length > 0 ? acc[acc.length - 1] : 0;
-        acc.push(lastXP + transaction.amount);
-        return acc;
-    }, []);
+    if (sortedXP.length > 0) {
+        let cumulativeXP = 0;
+        const dataPoints = sortedXP.map(transaction => {
+            cumulativeXP += transaction.amount;
+            return {
+                date: new Date(transaction.createdAt),
+                xp: cumulativeXP
+            };
+        });
 
-    // Create line
-    let xpLinePath = '';
-    for (let i = 0; i < cumulativeXP.length; i++) {
-        const x = i / (cumulativeXP.length - 1) * xpWidth;
-        const y = xpHeight - (cumulativeXP[i] / Math.max(...cumulativeXP)) * xpHeight;
-        xpLinePath += (i === 0) ? `M${x},${y}` : ` L${x},${y}`;
+        // Create XP line
+        const maxXP = dataPoints[dataPoints.length - 1].xp;
+        const minDate = dataPoints[0].date;
+        const maxDate = dataPoints[dataPoints.length - 1].date;
+        
+        let path = 'M ';
+        dataPoints.forEach((point, i) => {
+            const x = ((point.date - minDate) / (maxDate - minDate)) * xpWidth;
+            const y = xpHeight - (point.xp / maxXP) * xpHeight;
+            path += `${x},${y} `;
+            if (i < dataPoints.length - 1) path += 'L ';
+        });
+
+        const xpLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        xpLine.setAttribute('d', path);
+        xpLine.setAttribute('class', 'chart-line');
+        xpSvg.appendChild(xpLine);
     }
-
-    const xpLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    xpLine.setAttribute('d', xpLinePath);
-    xpLine.setAttribute('stroke', 'blue');
-    xpLine.setAttribute('fill', 'none');
-    xpSvg.appendChild(xpLine);
-
-    // Project Success Ratio Bar Chart
-    const projectSvg = document.getElementById('audit-ratios');
-    const projectWidth = projectSvg.width.baseVal.value;
-    const projectHeight = projectSvg.height.baseVal.value;
-
-    // Clear previous content
-    projectSvg.innerHTML = '';
-
-    // Process project data
-    const passCount = resultData.filter(item => item.grade === 1).length;
-    const failCount = resultData.filter(item => item.grade === 0).length;
-    const totalCount = resultData.length;
-
-    const passPercentage = (totalCount === 0) ? 0 : passCount / totalCount * 100;
-    const failPercentage = (totalCount === 0) ? 0 : failCount / totalCount * 100;
-
-    // Create pass bar
-    const passBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    passBar.setAttribute('x', 0);
-    passBar.setAttribute('y', 0);
-    passBar.setAttribute('width', projectWidth / 2);
-    passBar.setAttribute('height', passPercentage / 100 * projectHeight);
-    passBar.setAttribute('fill', 'green');
-    projectSvg.appendChild(passBar);
-
-    // Create fail bar
-    const failBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    failBar.setAttribute('x', projectWidth / 2);
-    failBar.setAttribute('y', 0);
-    failBar.setAttribute('width', projectWidth / 2);
-    failBar.setAttribute('height', failPercentage / 100 * projectHeight);
-    failBar.setAttribute('fill', 'red');
-    projectSvg.appendChild(failBar);
 }
 
-fetchProfileData();
+function updateAuditRatios(auditData) {
+    const svg = document.getElementById('audit-ratios');
+    const width = svg.clientWidth;
+    const height = svg.clientHeight;
+    
+    svg.innerHTML = '';
+    
+    const padding = 40;
+    const barWidth = (width - padding * 3) / 2;
+    
+    const maxCount = Math.max(auditData.done.count, auditData.received.count);
+    const doneHeight = maxCount ? (auditData.done.count / maxCount) * (height - padding * 2) : 0;
+    const receivedHeight = maxCount ? (auditData.received.count / maxCount) * (height - padding * 2) : 0;
+
+    // Done bar
+    const doneBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    doneBar.setAttribute('x', padding);
+    doneBar.setAttribute('y', height - padding - doneHeight);
+    doneBar.setAttribute('width', barWidth);
+    doneBar.setAttribute('height', doneHeight);
+    doneBar.setAttribute('class', 'audit-bar');
+    doneBar.setAttribute('fill', 'var(--audit-done-color)');
+
+    // Received bar
+    const receivedBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    receivedBar.setAttribute('x', padding * 2 + barWidth);
+    receivedBar.setAttribute('y', height - padding - receivedHeight);
+    receivedBar.setAttribute('width', barWidth);
+    receivedBar.setAttribute('height', receivedHeight);
+    receivedBar.setAttribute('class', 'audit-bar');
+    receivedBar.setAttribute('fill', 'var(--audit-received-color)');
+
+    // Labels
+    const doneLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    doneLabel.setAttribute('x', padding + barWidth/2);
+    doneLabel.setAttribute('y', height - padding/2);
+    doneLabel.setAttribute('text-anchor', 'middle');
+    doneLabel.setAttribute('class', 'audit-label');
+    doneLabel.textContent = `Done: ${auditData.done.count}`;
+
+    const receivedLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    receivedLabel.setAttribute('x', padding * 2 + barWidth * 1.5);
+    receivedLabel.setAttribute('y', height - padding/2);
+    receivedLabel.setAttribute('text-anchor', 'middle');
+    receivedLabel.setAttribute('class', 'audit-label');
+    receivedLabel.textContent = `Received: ${auditData.received.count}`;
+
+    svg.appendChild(doneBar);
+    svg.appendChild(receivedBar);
+    svg.appendChild(doneLabel);
+    svg.appendChild(receivedLabel);
+}
+
+// Call fetchProfileData when the page loads
+document.addEventListener('DOMContentLoaded', fetchProfileData);

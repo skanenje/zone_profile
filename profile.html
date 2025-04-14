@@ -2,14 +2,17 @@
 <html>
 <head>
     <title>Profile Page</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../style.css">
     <link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,">
 </head>
 <body>
     <div class="dashboard-container">
         <header class="dashboard-header">
             <h1>Profile</h1>
-            <button id="logout-button">Logout</button>
+            <div>
+                <a href="/test/graphiql.html" class="graphiql-button">Open GraphiQL</a>
+                <button id="logout-button">Logout</button>
+            </div>
         </header>
 
         <main class="dashboard-content">
@@ -31,11 +34,11 @@
             <section class="charts">
                 <div class="chart-container">
                     <h3>XP Over Time</h3>
-                    <svg id="xp-over-time" width="400" height="200"></svg>
+                    <svg id="xp-over-time" width="100%" height="200"></svg>
                 </div>
                 <div class="chart-container">
                     <h3>Audit Ratios</h3>
-                    <svg id="audit-ratios" width="400" height="200"></svg>
+                    <svg id="audit-ratios" width="100%" height="200"></svg>
                 </div>
             </section>
         </main>
