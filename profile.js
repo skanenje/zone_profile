@@ -137,11 +137,15 @@ async function fetchProfileData() {
 }
 
 function generateGraphs() {
-    // XP Over Time Line Chart
     const xpSvg = document.getElementById('xp-over-time');
     const xpWidth = xpSvg.clientWidth;
     const xpHeight = xpSvg.clientHeight;
-    const padding = 40;
+    const padding = {
+        left: 60,    // Increased left padding for y-axis labels
+        right: 20,
+        top: 20,
+        bottom: 30   // Increased bottom padding for x-axis labels
+    };
     
     // Clear previous content
     xpSvg.innerHTML = '';
@@ -149,10 +153,10 @@ function generateGraphs() {
     // Add grid lines
     const gridLines = 5;
     for (let i = 0; i <= gridLines; i++) {
-        const y = padding + (i / gridLines) * (xpHeight - padding * 2);
+        const y = padding.top + (i / gridLines) * (xpHeight - padding.top - padding.bottom);
         const gridLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        gridLine.setAttribute('x1', padding);
-        gridLine.setAttribute('x2', xpWidth - padding);
+        gridLine.setAttribute('x1', padding.left);
+        gridLine.setAttribute('x2', xpWidth - padding.right);
         gridLine.setAttribute('y1', y);
         gridLine.setAttribute('y2', y);
         gridLine.setAttribute('class', 'chart-grid-line');
@@ -183,8 +187,8 @@ function generateGraphs() {
         let path = 'M ';
         const points = [];
         dataPoints.forEach((point, i) => {
-            const x = padding + ((point.date - minDate) / (maxDate - minDate)) * (xpWidth - padding * 2);
-            const y = padding + (xpHeight - padding * 2) - ((point.xp / maxXP) * (xpHeight - padding * 2));
+            const x = padding.left + ((point.date - minDate) / (maxDate - minDate)) * (xpWidth - padding.left - padding.right);
+            const y = padding.top + (xpHeight - padding.top - padding.bottom) - ((point.xp / maxXP) * (xpHeight - padding.top - padding.bottom));
             path += `${x},${y} `;
             if (i < dataPoints.length - 1) path += 'L ';
             points.push({ x, y });
@@ -230,10 +234,10 @@ function generateGraphs() {
 
         // Add Y-axis labels
         for (let i = 0; i <= gridLines; i++) {
-            const y = padding + (i / gridLines) * (xpHeight - padding * 2);
+            const y = padding.top + (i / gridLines) * (xpHeight - padding.top - padding.bottom);
             const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             const value = ((gridLines - i) / gridLines * maxXP / 1000).toFixed(1);
-            label.setAttribute('x', padding - 10);
+            label.setAttribute('x', padding.left - 10);
             label.setAttribute('y', y);
             label.setAttribute('text-anchor', 'end');
             label.setAttribute('alignment-baseline', 'middle');
@@ -244,14 +248,14 @@ function generateGraphs() {
 
         // Add X-axis labels (start and end dates)
         const startLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        startLabel.setAttribute('x', padding);
-        startLabel.setAttribute('y', xpHeight - 10);
+        startLabel.setAttribute('x', padding.left);
+        startLabel.setAttribute('y', xpHeight - padding.bottom / 2);
         startLabel.setAttribute('class', 'chart-label');
         startLabel.textContent = minDate.toLocaleDateString();
 
         const endLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        endLabel.setAttribute('x', xpWidth - padding);
-        endLabel.setAttribute('y', xpHeight - 10);
+        endLabel.setAttribute('x', xpWidth - padding.right);
+        endLabel.setAttribute('y', xpHeight - padding.bottom / 2);
         endLabel.setAttribute('text-anchor', 'end');
         endLabel.setAttribute('class', 'chart-label');
         endLabel.textContent = maxDate.toLocaleDateString();
