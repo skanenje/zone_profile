@@ -5,9 +5,13 @@ loginForm.addEventListener('submit', async (e) => {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
+    console.log('Login attempt with username:', username);
+    
     const credentials = btoa(`${username}:${password}`);
+    console.log('Basic auth header being sent:', `Basic ${credentials}`);
 
     try {
+        console.log('Sending request to signin endpoint...');
         const response = await fetch('https://learn.zone01kisumu.ke/api/auth/signin', {
             method: 'POST',
             headers: {
@@ -15,21 +19,29 @@ loginForm.addEventListener('submit', async (e) => {
             }
         });
 
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        
         const data = await response.json();
+        console.log('Full response data:', data);
 
-    if (response.ok) {
-        console.log('Raw JWT:', data.jwt);  // Log the raw JWT
-        if (data.jwt) {
-            localStorage.setItem('hasura_jwt_token', data.jwt);
+        if (response.ok) {
+            // The JWT token is the response data itself
+            if (data && typeof data === 'string') {
+                console.log('JWT found in response');
+                localStorage.setItem('hasura_jwt_token', data);
+                window.location.href = 'profile.html';
+            } else {
+                console.error('Invalid response format:', data);
+                alert('Login failed: Invalid response format');
+            }
         } else {
-            console.error('JWT is missing in the response');
-            alert('Login successful, but JWT is missing!');
+            console.error('Login failed with status:', response.status);
+            console.error('Error details:', data);
+            alert('Login failed: ' + (data.message || 'Unknown error'));
         }
-        window.location.href = 'profile.html';
-    } else {
-        alert('Login failed: ' + data.message);
-    }
     } catch (error) {
+        console.error('Login request failed:', error);
         alert('Login failed: ' + error);
     }
 });

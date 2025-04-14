@@ -1,7 +1,7 @@
 const logoutButton = document.getElementById('logout-button');
 
 logoutButton.addEventListener('click', () => {
-    localStorage.removeItem('jwt');
+    localStorage.removeItem('hasura_jwt_token');
     window.location.href = 'index.html';
 });
 
