@@ -126,7 +126,7 @@ async function fetchProfileData() {
                     path: {_like: "%piscine-ui%"}
                 }
             ) {
-                amounty
+                amount
                 createdAt
                 path
             }
