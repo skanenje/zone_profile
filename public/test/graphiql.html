@@ -32,14 +32,14 @@
         
         if (!token) {
           statusDiv.style.backgroundColor = '#ffebee';
-          statusDiv.innerHTML = 'Error: No JWT token found. Please log in first.';
+          statusDiv.innerHTML = 'Error: No JWT token found. Please <a href="/index.html">log in first</a>.';
           return false;
         }
         
         const parts = token.split('.');
         if (parts.length !== 3) {
           statusDiv.style.backgroundColor = '#ffebee';
-          statusDiv.innerHTML = 'Error: Invalid JWT token format. Please log in again.';
+          statusDiv.innerHTML = 'Error: Invalid JWT token format. Please <a href="/index.html">log in again</a>.';
           return false;
         }
         

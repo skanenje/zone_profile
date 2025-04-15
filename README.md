@@ -24,13 +24,17 @@ A web application that allows Apprentices and Piscine users view their profile i
 ```
 ├── Dockerfile           # Docker container configuration
 ├── nginx.conf          # Nginx server configuration
-├── index.html          # Login page
-├── profile.html        # Dashboard page
-├── script.js           # Login authentication logic
-├── profile.js          # Dashboard functionality
-├── style.css          # Application styles
-└── test/
-    └── graphiql.html  # GraphQL API testing interface
+├── README.md           # Project documentation
+└── public/             # Static files served by Nginx
+    ├── index.html      # Login page
+    ├── profile.html    # Dashboard page
+    ├── css/
+    │   └── style.css   # Application styles
+    ├── js/
+    │   ├── script.js   # Login authentication logic
+    │   └── profile.js  # Dashboard functionality
+    └── test/
+        └── graphiql.html  # GraphQL API testing interface
 ```
 
 ## Getting Started

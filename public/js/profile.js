@@ -2,7 +2,7 @@ const logoutButton = document.getElementById('logout-button');
 
 logoutButton.addEventListener('click', () => {
     localStorage.removeItem('hasura_jwt_token');
-    window.location.href = 'index.html';
+    window.location.href = '/index.html';
 });
 
 let moduleXP = [];
@@ -18,7 +18,7 @@ async function fetchProfileData() {
     if (!jwt || jwt.split('.').length !== 3) {
         console.error('Invalid JWT:', jwt);
         alert('Invalid authentication token');
-        window.location.href = 'index.html';
+        window.location.href = '/index.html';
         return;
     }
 

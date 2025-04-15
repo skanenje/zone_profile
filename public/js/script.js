@@ -30,7 +30,7 @@ loginForm.addEventListener('submit', async (e) => {
             if (data && typeof data === 'string') {
                 console.log('JWT found in response');
                 localStorage.setItem('hasura_jwt_token', data);
-                window.location.href = 'profile.html';
+                window.location.href = '/profile.html';
             } else {
                 console.error('Invalid response format:', data);
                 alert('Login failed: Invalid response format');

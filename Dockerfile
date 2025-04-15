@@ -5,7 +5,7 @@ FROM nginx:1.25.2-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy application files to nginx html directory
-COPY . /usr/share/nginx/html
+COPY public/ /usr/share/nginx/html/
 
 # Expose port 80
 EXPOSE 8081
