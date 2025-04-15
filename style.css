@@ -1,3 +1,7 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 :root {
     --primary-color: #4e54c8;
     --secondary-color: #8f94fb;
@@ -28,6 +32,7 @@ form {
     background-color: var(--card-bg);
     border-radius: var(--border-radius);
     box-shadow: 0 10px 30px rgba(65, 88, 208, 0.2);
+    width: 100%;
 }
 
 input {
@@ -38,6 +43,7 @@ input {
     border-radius: var(--border-radius);
     background: rgba(255, 255, 255, 0.1);
     color: var(--text-color);
+    box-sizing: border-box;
 }
 
 button, .graphiql-button {
@@ -207,8 +213,24 @@ button:hover, .graphiql-button:hover {
     border-radius: var(--border-radius);
     box-shadow: 0 10px 30px rgba(65, 88, 208, 0.2);
     width: 100%;
-    max-width: 500px;
+    max-width: 400px;
     padding: 30px;
+    overflow: hidden;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.auth-form button {
+    margin-top: 10px;
+    align-self: flex-start;
+    background-color: #00e6e6;
+    border-radius: 50px;
+    padding: 10px 25px;
+    font-weight: 600;
 }
 
 /* Skills Section Styles */
