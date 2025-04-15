@@ -38,6 +38,55 @@ async function fetchProfileData() {
                 path
             }
             
+            skills: transaction(
+                where: {
+                    type: {_like: "skill_%"}
+                },
+                order_by: {
+                    createdAt: desc
+                }
+            ) {
+                id
+                type
+                amount
+                createdAt
+                path
+            }
+
+            exercises: progress(
+                where: {
+                    object: {
+                        type: {_eq: "exercise"}
+                    }
+                },
+                order_by: {
+                    createdAt: desc
+                }
+            ) {
+                id
+                grade
+                createdAt
+                object {
+                    id
+                    name
+                    type
+                }
+            }
+
+            skillSummary: transaction_aggregate(
+                where: {
+                    type: {_like: "skill_%"}
+                }
+            ) {
+                nodes {
+                    type
+                    amount
+                }
+                aggregate {
+                    count
+                }
+            }
+
             piscineGoXP: transaction(
                 where: {
                     type: {_eq: "xp"}, 
@@ -152,9 +201,12 @@ async function fetchProfileData() {
         piscineUiXP = responseData.data.piscineUiXP || [];
         piscineRustXP = responseData.data.piscineRustXP || [];
 
-        // Update UI with user data
+        // Update UI with all the data
         document.getElementById('user-id').textContent = responseData.data.user[0].id || 'N/A';
         document.getElementById('username').textContent = responseData.data.user[0].login || 'N/A';
+
+        // Display skills data
+        displaySkills(responseData.data.skills, responseData.data.skillSummary);
 
         // Calculate different types of XP
         const moduleXPTotal = moduleXP.reduce((sum, t) => sum + t.amount, 0) || 0;
@@ -196,6 +248,53 @@ async function fetchProfileData() {
     } catch (error) {
         console.error('Full Error:', error);
         alert('Failed to fetch profile data: ' + error.message);
+    }
+}
+
+function displaySkills(skills, skillSummary) {
+    const skillsList = document.getElementById('skills-list');
+    const skillSummaryDiv = document.getElementById('skill-summary');
+
+    // Clear previous content
+    skillsList.innerHTML = '';
+    skillSummaryDiv.innerHTML = '';
+
+    // Group and sum skills by type
+    if (skills && skills.length > 0) {
+        const groupedSkills = skills.reduce((acc, skill) => {
+            const skillType = skill.type.replace('skill_', '').replace(/_/g, ' ');
+            if (!acc[skillType]) {
+                acc[skillType] = 0;
+            }
+            acc[skillType] += skill.amount;
+            return acc;
+        }, {});
+
+        // Convert to array and sort by amount
+        const sortedSkills = Object.entries(groupedSkills)
+            .sort((a, b) => b[1] - a[1]) // Sort by amount in descending order
+            .map(([type, amount]) => `
+                <div class="skill-item">
+                    <span class="skill-name">${type}</span>
+                    <span class="skill-amount">${amount.toFixed(2)}</span>
+                </div>
+            `).join('');
+
+        skillsList.innerHTML = sortedSkills;
+    } else {
+        skillsList.innerHTML = '<p>No skills data available</p>';
+    }
+
+    // Display skill summary
+    if (skillSummary && skillSummary.aggregate) {
+        const totalAmount = skillSummary.nodes.reduce((sum, skill) => sum + skill.amount, 0);
+        skillSummaryDiv.innerHTML = `
+            <div class="skill-summary-card">
+                <h3>Skills Overview</h3>
+                <p>Total Skills: ${skillSummary.aggregate.count}</p>
+                <p>Total Points: ${totalAmount.toFixed(2)}</p>
+            </div>
+        `;
     }
 }
 

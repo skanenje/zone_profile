@@ -9,6 +9,8 @@
     --audit-done-color: #4CAF50;
     --audit-received-color: #2196F3;
     --chart-grid-color: rgba(255, 255, 255, 0.1);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --text-muted: rgba(255, 255, 255, 0.6);
 }
 
 body {
@@ -209,6 +211,65 @@ button:hover, .graphiql-button:hover {
     padding: 30px;
 }
 
+/* Skills Section Styles */
+.profile-section {
+    background: var(--card-bg);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#skills-container {
+    display: grid;
+    grid-template-columns: 3fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.skill-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+}
+
+.skill-name {
+    font-weight: 600;
+    text-transform: capitalize;
+    color: var(--text-color);
+}
+
+.skill-amount {
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.skill-date {
+    color: var(--text-muted);
+    font-size: 0.9em;
+}
+
+.skill-summary-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.skill-summary-card h3 {
+    margin: 0 0 0.75rem 0;
+    color: var(--accent-color);
+}
+
+.skill-summary-card p {
+    margin: 0.25rem 0;
+    color: var(--text-color);
+}
+
 @media (max-width: 768px) {
     .key-metrics,
     .charts {
@@ -224,5 +285,9 @@ button:hover, .graphiql-button:hover {
         flex-direction: column;
         text-align: center;
         gap: 1rem;
+    }
+
+    #skills-container {
+        grid-template-columns: 1fr;
     }
 }
