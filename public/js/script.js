@@ -1,17 +1,21 @@
 const loginForm = document.getElementById('login-form');
 
+// Create error message element and insert it before the form
+const errorDiv = document.createElement('div');
+errorDiv.className = 'error-message';
+errorDiv.style.display = 'none';
+loginForm.insertBefore(errorDiv, loginForm.firstChild);
+
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    console.log('Login attempt with username:', username);
+    // Clear previous error
+    errorDiv.style.display = 'none';
     
-    const credentials = btoa(`${username}:${password}`);
-    console.log('Basic auth header being sent:', `Basic ${credentials}`);
-
     try {
-        console.log('Sending request to signin endpoint...');
+        const credentials = btoa(`${username}:${password}`);
         const response = await fetch('https://learn.zone01kisumu.ke/api/auth/signin', {
             method: 'POST',
             headers: {
@@ -19,29 +23,34 @@ loginForm.addEventListener('submit', async (e) => {
             }
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response headers:', [...response.headers.entries()]);
-        
         const data = await response.json();
-        console.log('Full response data:', data);
 
         if (response.ok) {
-            // The JWT token is the response data itself
             if (data && typeof data === 'string') {
-                console.log('JWT found in response');
                 localStorage.setItem('hasura_jwt_token', data);
                 window.location.href = '/profile.html';
             } else {
-                console.error('Invalid response format:', data);
-                alert('Login failed: Invalid response format');
+                showError('Server error: Invalid response format');
             }
         } else {
-            console.error('Login failed with status:', response.status);
-            console.error('Error details:', data);
-            alert('Login failed: ' + (data.message || 'Unknown error'));
+            // Handle specific error cases
+            if (response.status === 401) {
+                showError('Incorrect username or password');
+            } else if (response.status === 429) {
+                showError('Too many login attempts. Please try again in a few minutes');
+            } else {
+                showError(data.message || 'Login failed. Please try again');
+            }
         }
     } catch (error) {
         console.error('Login request failed:', error);
-        alert('Login failed: ' + error);
+        showError('Unable to connect to the server. Please check your internet connection');
     }
 });
+
+function showError(message) {
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    // Ensure the error message is visible
+    errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}

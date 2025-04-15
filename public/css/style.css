@@ -222,10 +222,12 @@ button:hover, .graphiql-button:hover {
     display: flex;
     flex-direction: column;
     width: 100%;
+    position: relative;
+    gap: 15px;
 }
 
 .auth-form button {
-    margin-top: 10px;
+    margin-top: 0;
     align-self: flex-start;
     background-color: #00e6e6;
     border-radius: 50px;
@@ -346,6 +348,26 @@ button:hover, .graphiql-button:hover {
 .skill-summary-card p {
     margin: 0.25rem 0;
     color: var(--text-color);
+}
+
+.error-message {
+    background-color: rgba(255, 0, 0, 0.1);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    color: #ff6b6b;
+    padding: 12px;
+    margin: 0 0 15px 0;
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-size: 0.9rem;
+    animation: fadeIn 0.3s ease;
+    width: 100%;
+    position: relative;
+    box-sizing: border-box;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 1200px) {
