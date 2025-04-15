@@ -14,7 +14,7 @@ let piscineRustXP = [];
 
 async function fetchProfileData() {
     const jwt = localStorage.getItem('hasura_jwt_token');
-    
+
     if (!jwt || jwt.split('.').length !== 3) {
         console.error('Invalid JWT:', jwt);
         alert('Invalid authentication token');
@@ -26,7 +26,7 @@ async function fetchProfileData() {
         query {
             moduleXP: transaction(
                 where: {
-                    type: {_eq: "xp"}, 
+                    type: {_eq: "xp"},
                     path: {_like: "/kisumu/module/%"},
                     _and: {
                         path: {_nlike: "%piscine%"}
@@ -37,7 +37,7 @@ async function fetchProfileData() {
                 createdAt
                 path
             }
-            
+
             skills: transaction(
                 where: {
                     type: {_like: "skill_%"}
@@ -89,7 +89,7 @@ async function fetchProfileData() {
 
             piscineGoXP: transaction(
                 where: {
-                    type: {_eq: "xp"}, 
+                    type: {_eq: "xp"},
                     path: {_like: "%piscine-go%"}
                 }
             ) {
@@ -100,7 +100,7 @@ async function fetchProfileData() {
 
             piscineJsXP: transaction(
                 where: {
-                    type: {_eq: "xp"}, 
+                    type: {_eq: "xp"},
                     path: {_like: "%piscine-js%"}
                 }
             ) {
@@ -111,7 +111,7 @@ async function fetchProfileData() {
 
             piscineUxXP: transaction(
                 where: {
-                    type: {_eq: "xp"}, 
+                    type: {_eq: "xp"},
                     path: {_like: "%piscine-ux%"}
                 }
             ) {
@@ -122,7 +122,7 @@ async function fetchProfileData() {
 
             piscineUiXP: transaction(
                 where: {
-                    type: {_eq: "xp"}, 
+                    type: {_eq: "xp"},
                     path: {_like: "%piscine-ui%"}
                 }
             ) {
@@ -133,7 +133,7 @@ async function fetchProfileData() {
 
             piscineRustXP: transaction(
                 where: {
-                    type: {_eq: "xp"}, 
+                    type: {_eq: "xp"},
                     path: {_like: "%piscine-rust%"}
                 }
             ) {
@@ -141,7 +141,7 @@ async function fetchProfileData() {
                 createdAt
                 path
             }
-            
+
             auditsDone: transaction(
                 where: {
                     type: {_eq: "up"},
@@ -152,7 +152,7 @@ async function fetchProfileData() {
                 createdAt
                 path
             }
-            
+
             auditsReceived: transaction(
                 where: {
                     type: {_eq: "down"},
@@ -163,7 +163,7 @@ async function fetchProfileData() {
                 createdAt
                 path
             }
-            
+
             user {
                 id
                 login
@@ -215,7 +215,7 @@ async function fetchProfileData() {
         const piscineUxTotal = piscineUxXP.reduce((sum, t) => sum + t.amount, 0) || 0;
         const piscineUiTotal = piscineUiXP.reduce((sum, t) => sum + t.amount, 0) || 0;
         const piscineRustTotal = piscineRustXP.reduce((sum, t) => sum + t.amount, 0) || 0;
-        
+
         // Update UI with separated XP values
         document.getElementById('xp').innerHTML = `
             <div>Module XP: ${(moduleXPTotal / 1000).toFixed(2)} kB</div>
@@ -230,7 +230,7 @@ async function fetchProfileData() {
         // Calculate audit statistics
         const auditsDone = responseData.data.auditsDone || [];
         const auditsReceived = responseData.data.auditsReceived || [];
-        
+
         // Update the audit ratios visualization
         updateAuditRatios({
             done: {
@@ -252,12 +252,10 @@ async function fetchProfileData() {
 }
 
 function displaySkills(skills, skillSummary) {
-    const skillsList = document.getElementById('skills-list');
-    const skillSummaryDiv = document.getElementById('skill-summary');
+    const skillsContainer = document.getElementById('skills-container');
 
     // Clear previous content
-    skillsList.innerHTML = '';
-    skillSummaryDiv.innerHTML = '';
+    skillsContainer.innerHTML = '';
 
     // Group and sum skills by type
     if (skills && skills.length > 0) {
@@ -271,30 +269,38 @@ function displaySkills(skills, skillSummary) {
         }, {});
 
         // Convert to array and sort by amount
-        const sortedSkills = Object.entries(groupedSkills)
+        const skillsHtml = Object.entries(groupedSkills)
             .sort((a, b) => b[1] - a[1]) // Sort by amount in descending order
-            .map(([type, amount]) => `
-                <div class="skill-item">
-                    <span class="skill-name">${type}</span>
-                    <span class="skill-amount">${amount.toFixed(2)}</span>
-                </div>
-            `).join('');
+            .map(([type, amount]) => {
+                // Calculate percentage for the circle (capped at 100)
+                const percentage = Math.min(amount, 100);
+                const radius = 36;
+                const circumference = 2 * Math.PI * radius;
+                const offset = circumference - (percentage / 100) * circumference;
 
-        skillsList.innerHTML = sortedSkills;
+                return `
+                    <div class="skill-item">
+                        <div class="skill-progress-circle">
+                            <svg viewBox="0 0 80 80">
+                                <circle class="skill-progress-background"
+                                    cx="40" cy="40" r="${radius}"
+                                />
+                                <circle class="skill-progress-value"
+                                    cx="40" cy="40" r="${radius}"
+                                    stroke-dasharray="${circumference}"
+                                    stroke-dashoffset="${offset}"
+                                />
+                            </svg>
+                            <span class="skill-amount">${amount.toFixed(0)}</span>
+                        </div>
+                        <span class="skill-name">${type}</span>
+                    </div>
+                `;
+            }).join('');
+
+        skillsContainer.innerHTML = skillsHtml;
     } else {
-        skillsList.innerHTML = '<p>No skills data available</p>';
-    }
-
-    // Display skill summary
-    if (skillSummary && skillSummary.aggregate) {
-        const totalAmount = skillSummary.nodes.reduce((sum, skill) => sum + skill.amount, 0);
-        skillSummaryDiv.innerHTML = `
-            <div class="skill-summary-card">
-                <h3>Skills Overview</h3>
-                <p>Total Skills: ${skillSummary.aggregate.count}</p>
-                <p>Total Points: ${totalAmount.toFixed(2)}</p>
-            </div>
-        `;
+        skillsContainer.innerHTML = '<p>No skills data available</p>';
     }
 }
 
@@ -303,15 +309,15 @@ function generateGraphs() {
     const xpWidth = xpSvg.clientWidth;
     const xpHeight = xpSvg.clientHeight;
     const padding = {
-        left: 60,    
+        left: 60,
         right: 20,
         top: 20,
-        bottom: 30  
+        bottom: 30
     };
-    
+
     // Clear previous content
     xpSvg.innerHTML = '';
-    
+
     // Add grid lines
     const gridLines = 5;
     for (let i = 0; i <= gridLines; i++) {
@@ -326,7 +332,7 @@ function generateGraphs() {
     }
 
     // Process XP data
-    const sortedXP = [...moduleXP, ...piscineGoXP, ...piscineJsXP, ...piscineUxXP, ...piscineUiXP, ...piscineRustXP].sort((a, b) => 
+    const sortedXP = [...moduleXP, ...piscineGoXP, ...piscineJsXP, ...piscineUxXP, ...piscineUiXP, ...piscineRustXP].sort((a, b) =>
         new Date(a.createdAt) - new Date(b.createdAt)
     );
 
@@ -344,7 +350,7 @@ function generateGraphs() {
         const maxXP = dataPoints[dataPoints.length - 1].xp;
         const minDate = dataPoints[0].date;
         const maxDate = dataPoints[dataPoints.length - 1].date;
-        
+
         // Draw the line
         let path = 'M ';
         const points = [];
@@ -431,12 +437,12 @@ function updateAuditRatios(auditData) {
     const svg = document.getElementById('audit-ratios');
     const width = svg.clientWidth;
     const height = svg.clientHeight;
-    
+
     svg.innerHTML = '';
-    
+
     const padding = 40;
     const barWidth = (width - padding * 3) / 2;
-    
+
     const maxCount = Math.max(auditData.done.count, auditData.received.count);
     const doneHeight = maxCount ? (auditData.done.count / maxCount) * (height - padding * 2) : 0;
     const receivedHeight = maxCount ? (auditData.received.count / maxCount) * (height - padding * 2) : 0;
