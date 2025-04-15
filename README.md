@@ -69,4 +69,4 @@ docker run -p 8081:8081 graphql-dashboard
 
 ## Live Demo
 
-https://zone-profile.vercel.app/
+https://zone01profile.netlify.app/
